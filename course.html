@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Detail - Hey Mate</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Header injected by JS -->
+    <header class="site-header" id="site-header"></header>
+
+    <!-- ========== COURSE DETAIL PAGE ========== -->
+    <main class="course-detail-page" id="courseDetailPage">
+        <!-- All content rendered dynamically by JS -->
+    </main>
+
+    <!-- Footer injected by JS -->
+    <footer class="site-footer" id="site-footer"></footer>
+
+    <!-- Scripts -->
+    <script src="js/data.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+        /* --- Course Detail Page: renders full course info --- */
+        document.addEventListener('DOMContentLoaded', function() {
+            var page = document.getElementById('courseDetailPage');
+            if (!page) return;
+
+            // Get course ID from URL
+            var params = new URLSearchParams(window.location.search);
+            var courseId = parseInt(params.get('id'));
+            if (!courseId) { window.location.href = 'courses.html'; return; }
+
+            var courses = getCourses();
+            var course = courses.find(function(c) { return c.id === courseId; });
+            if (!course) {
+                page.innerHTML = '<div class="empty-state" style="margin-top:3rem;"><div class="es-icon">&#128533;</div><h3>Course not found</h3><p>The course you are looking for does not exist.</p><a href="courses.html" class="btn btn-primary">Browse Courses</a></div>';
+                return;
+            }
+
+            // Check if user is already enrolled
+            var user = getCurrentUser();
+            var enrollments = getEnrollments();
+            var isEnrolled = user && enrollments.some(function(e) { return e.userId === user.id && e.courseId === courseId; });
+            var totalLessons = getTotalLessons(course);
+            var stars = '&#9733;'.repeat(Math.floor(course.rating));
+
+            // --- Build the page HTML ---
+            var html = '';
+
+            // Hero section: image + info
+            html += '<div class="cd-hero fade-in">';
+            html += '<div class="cd-hero-image"><img src="' + course.image + '" alt="' + course.title + '"></div>';
+            html += '<div class="cd-hero-info">';
+            html += '<span class="badge badge-primary">' + course.category + '</span>';
+            html += '<h1>' + course.title + '</h1>';
+            html += '<div class="cd-meta">';
+            html += '<span class="stars">' + stars + ' ' + course.rating + '</span>';
+            html += '<span>' + course.students.toLocaleString() + ' students</span>';
+            html += '<span>' + course.duration + '</span>';
+            html += '<span>' + course.level + '</span>';
+            html += '</div>';
+            html += '<p class="cd-desc">' + course.description + '</p>';
+            html += '<div class="cd-price">$' + course.price.toFixed(2) + '</div>';
+
+            // Instructor info box
+            html += '<div class="cd-instructor">';
+            html += '<img src="' + course.instructor.avatar + '" alt="' + course.instructor.name + '" class="avatar avatar-lg">';
+            html += '<div class="cd-instructor-info"><div class="name">' + course.instructor.name + '</div><div class="role">Course Instructor</div></div>';
+            html += '</div>';
+
+            // Enroll button
+            if (isEnrolled) {
+                // Find next lesson to resume
+                var progress = getProgress();
+                var completedLessons = progress[courseId] || [];
+                var allLessons = getAllLessons(course);
+                var nextLesson = allLessons.find(function(l) { return completedLessons.indexOf(l.id) === -1; });
+                var resumeUrl = nextLesson
+                    ? 'lesson.html?courseId=' + courseId + '&lessonId=' + nextLesson.id
+                    : 'quiz.html?courseId=' + courseId;
+                html += '<a href="' + resumeUrl + '" class="btn btn-secondary btn-lg mt-2" style="width:100%;">Continue Learning</a>';
+            } else {
+                html += '<button class="btn btn-primary btn-lg mt-2" style="width:100%;" onclick="enrollCourse(' + courseId + ')">Enroll Now</button>';
+            }
+
+            html += '</div></div>'; // end cd-hero
+
+            // Curriculum section
+            html += '<div class="cd-curriculum fade-in fade-in-delay-1">';
+            html += '<h2>Course Curriculum</h2>';
+            html += '<p style="color:var(--text-muted);margin-bottom:1.2rem;">' + course.modules.length + ' modules &middot; ' + totalLessons + ' lessons</p>';
+
+            course.modules.forEach(function(mod, mi) {
+                html += '<div class="curriculum-module">';
+                html += '<div class="module-header" onclick="toggleModule(this)">';
+                html += '<span>' + mod.title + '</span>';
+                html += '<span class="module-lessons">' + mod.lessons.length + ' lessons <span class="module-arrow">&#9660;</span></span>';
+                html += '</div>';
+                html += '<div class="module-lessons-list' + (mi === 0 ? ' open' : '') + '">';
+
+                mod.lessons.forEach(function(lesson) {
+                    var typeIcon = lesson.type === 'video' ? '&#9654;' : '&#128196;';
+                    html += '<div class="lesson-item">';
+                    html += '<span><span class="lesson-type">' + typeIcon + '</span> ' + lesson.title + '</span>';
+                    html += '<span class="lesson-duration">' + lesson.duration + '</span>';
+                    html += '</div>';
+                });
+
+                html += '</div></div>';
+            });
+
+            html += '</div>';
+
+            page.innerHTML = html;
+
+            // Open first module by default
+            var firstHeader = page.querySelector('.module-header');
+            if (firstHeader) firstHeader.classList.add('open');
+        });
+
+        /* --- Toggle module accordion --- */
+        function toggleModule(header) {
+            header.classList.toggle('open');
+            var list = header.nextElementSibling;
+            list.classList.toggle('open');
+        }
+
+        /* --- Enroll in a course --- */
+        function enrollCourse(courseId) {
+            if (!isLoggedIn()) {
+                showToast('Please login to enroll in courses.', 'warning');
+                setTimeout(function() { window.location.href = 'login.html'; }, 800);
+                return;
+            }
+
+            var user = getCurrentUser();
+            var enrollments = getEnrollments();
+            var alreadyEnrolled = enrollments.some(function(e) { return e.userId === user.id && e.courseId === courseId; });
+
+            if (alreadyEnrolled) {
+                showToast('You are already enrolled in this course.', 'warning');
+                return;
+            }
+
+            enrollments.push({
+                userId: user.id,
+                courseId: courseId,
+                enrolledDate: new Date().toISOString().split('T')[0]
+            });
+            saveEnrollments(enrollments);
+
+            showToast('Successfully enrolled! Start learning now.', 'success');
+            // Reload page to show updated UI
+            setTimeout(function() { window.location.reload(); }, 600);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson - Hey Mate</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Header injected by JS -->
+    <header class="site-header" id="site-header"></header>
+
+    <!-- ========== LESSON PLAYER PAGE ========== -->
+    <main class="lesson-page" id="lessonPage">
+        <!-- All content rendered dynamically by JS -->
+    </main>
+
+    <!-- Footer injected by JS -->
+    <footer class="site-footer" id="site-footer"></footer>
+
+    <!-- Scripts -->
+    <script src="js/data.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+        /* --- Lesson Player: video placeholder + sidebar + progress tracking --- */
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!requireLogin()) return;
+
+            var page = document.getElementById('lessonPage');
+            var params = new URLSearchParams(window.location.search);
+            var courseId = parseInt(params.get('courseId'));
+            var lessonId = parseInt(params.get('lessonId'));
+
+            if (!courseId || !lessonId) { window.location.href = 'dashboard.html'; return; }
+
+            var courses = getCourses();
+            var course = courses.find(function(c) { return c.id === courseId; });
+            if (!course) { window.location.href = 'dashboard.html'; return; }
+
+            var allLessons = getAllLessons(course);
+            var currentLesson = allLessons.find(function(l) { return l.id === lessonId; });
+            if (!currentLesson) { window.location.href = 'dashboard.html'; return; }
+
+            var progress = getProgress();
+            var completedLessons = progress[courseId] || [];
+            var isCompleted = completedLessons.indexOf(lessonId) !== -1;
+
+            // Find current lesson index and next/prev
+            var currentIdx = allLessons.findIndex(function(l) { return l.id === lessonId; });
+            var prevLesson = currentIdx > 0 ? allLessons[currentIdx - 1] : null;
+            var nextLesson = currentIdx < allLessons.length - 1 ? allLessons[currentIdx + 1] : null;
+
+            // --- Build HTML ---
+            var html = '<div class="lesson-layout">';
+
+            // Left: Video + Lesson Content
+            html += '<div class="lesson-content-area fade-in">';
+
+            // Video Placeholder
+            html += '<div class="video-placeholder">';
+            html += '<div class="play-icon">&#9654;</div>';
+            html += '<div class="vp-text">' + (currentLesson.type === 'video' ? 'Video Player Placeholder' : 'Reading Material') + '</div>';
+            html += '</div>';
+
+            // Lesson Title & Info
+            html += '<h2>' + currentLesson.title + '</h2>';
+            html += '<div class="lesson-info">';
+            html += '<span>' + currentLesson.moduleTitle + '</span>';
+            html += '<span>' + currentLesson.duration + '</span>';
+            html += '<span>' + (currentLesson.type === 'video' ? 'Video Lesson' : 'Text Lesson') + '</span>';
+            html += '</div>';
+
+            // Sample lesson text content
+            html += '<div class="lesson-text">';
+            html += '<p>This is where the lesson content would be displayed. In a real application, this area would contain the actual video player, embedded content, rich text materials, code examples, or interactive exercises.</p>';
+            html += '<p style="margin-top:1rem;">The lesson covers key concepts related to <strong>' + currentLesson.title + '</strong> within the <strong>' + currentLesson.moduleTitle + '</strong> module. Take your time to understand the material before moving on to the next lesson.</p>';
+            html += '<p style="margin-top:1rem;">Remember, you can mark this lesson as completed once you feel confident about the topic. Your progress is saved automatically.</p>';
+            html += '</div>';
+
+            // Action buttons
+            html += '<div class="lesson-actions">';
+            if (prevLesson) {
+                html += '<a href="lesson.html?courseId=' + courseId + '&lessonId=' + prevLesson.id + '" class="btn btn-outline">&larr; Previous</a>';
+            }
+            if (!isCompleted) {
+                html += '<button class="btn btn-primary" onclick="markComplete(' + courseId + ',' + lessonId + ')">&#10003; Mark as Completed</button>';
+            } else {
+                html += '<span class="badge badge-success" style="padding:0.5rem 1rem;font-size:0.9rem;">&#10003; Completed</span>';
+            }
+            if (nextLesson) {
+                html += '<a href="lesson.html?courseId=' + courseId + '&lessonId=' + nextLesson.id + '" class="btn btn-secondary">Next &rarr;</a>';
+            } else {
+                // Last lesson: offer quiz
+                html += '<a href="quiz.html?courseId=' + courseId + '" class="btn btn-secondary">Take Quiz &rarr;</a>';
+            }
+            html += '</div>';
+
+            html += '</div>'; // end lesson-content-area
+
+            // Right: Lesson Sidebar
+            html += '<div class="lesson-sidebar fade-in fade-in-delay-1">';
+            html += '<div class="sidebar-header">Course Content</div>';
+
+            course.modules.forEach(function(mod) {
+                html += '<div class="sidebar-module">';
+                html += '<div class="sidebar-module-title">' + mod.title + '</div>';
+                mod.lessons.forEach(function(l) {
+                    var isActive = l.id === lessonId;
+                    var isDone = completedLessons.indexOf(l.id) !== -1;
+                    var icon = isDone ? '&#10003;' : (l.type === 'video' ? '&#9654;' : '&#128196;');
+                    html += '<a href="lesson.html?courseId=' + courseId + '&lessonId=' + l.id + '" class="sidebar-lesson' +
+                        (isActive ? ' active' : '') + (isDone ? ' completed' : '') + '">';
+                    html += '<span class="sl-icon">' + icon + '</span>';
+                    html += '<span>' + l.title + '</span>';
+                    html += '</a>';
+                });
+                html += '</div>';
+            });
+
+            html += '</div>'; // end lesson-sidebar
+            html += '</div>'; // end lesson-layout
+
+            page.innerHTML = html;
+        });
+
+        /* --- Mark a lesson as completed and save to localStorage --- */
+        function markComplete(courseId, lessonId) {
+            var progress = getProgress();
+            if (!progress[courseId]) progress[courseId] = [];
+
+            // Add lesson ID if not already completed
+            if (progress[courseId].indexOf(lessonId) === -1) {
+                progress[courseId].push(lessonId);
+                saveProgress(progress);
+                showToast('Lesson marked as completed!', 'success');
+                // Reload page to update sidebar and buttons
+                setTimeout(function() { window.location.reload(); }, 500);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Hey Mate</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Header injected by JS -->
+    <header class="site-header" id="site-header"></header>
+
+    <!-- ========== ADMIN PANEL ========== -->
+    <main class="admin-page">
+        <h1 class="fade-in">Admin Panel</h1>
+
+        <!-- Admin Tabs -->
+        <div class="admin-tabs fade-in fade-in-delay-1">
+            <button class="admin-tab active" data-tab="courses">Manage Courses</button>
+            <button class="admin-tab" data-tab="users">Users</button>
+            <button class="admin-tab" data-tab="enrollments">Enrollments</button>
+        </div>
+
+        <!-- ===== PANEL: Manage Courses ===== -->
+        <div class="admin-panel active" id="panel-courses">
+            <!-- Add/Edit Course Form -->
+            <div class="admin-form-card fade-in fade-in-delay-2">
+                <h3 id="adminFormTitle">Add New Course</h3>
+                <form id="adminCourseForm" novalidate>
+                    <div class="admin-form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="acf_title">Course Title</label>
+                            <input type="text" id="acf_title" class="form-input" placeholder="e.g. Learn React from Scratch" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="acf_category">Category</label>
+                            <select id="acf_category" class="form-select" required>
+                                <option value="">Select category</option>
+                                <option value="Web Development">Web Development</option>
+                                <option value="Data Science">Data Science</option>
+                                <option value="Design">Design</option>
+                                <option value="Mobile Development">Mobile Development</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="AI & Machine Learning">AI & Machine Learning</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="acf_price">Price ($)</label>
+                            <input type="number" id="acf_price" class="form-input" placeholder="29.99" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="acf_level">Level</label>
+                            <select id="acf_level" class="form-select" required>
+                                <option value="">Select level</option>
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Advanced">Advanced</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label class="form-label" for="acf_desc">Description</label>
+                            <textarea id="acf_desc" class="form-textarea" placeholder="Describe what students will learn..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="acf_instructor">Instructor Name</label>
+                            <input type="text" id="acf_instructor" class="form-input" placeholder="Instructor full name" required>
+                        </div>
+                        <div class="form-group full-width" style="display:flex;align-items:flex-end;">
+                            <button type="submit" class="btn btn-primary btn-lg">Save Course</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Courses Table -->
+            <div class="admin-table-wrapper fade-in fade-in-delay-3">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Students</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminCoursesBody">
+                        <!-- Rendered by admin.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== PANEL: Users ===== -->
+        <div class="admin-panel" id="panel-users">
+            <div class="admin-table-wrapper fade-in">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminUsersBody">
+                        <!-- Rendered by admin.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== PANEL: Enrollments ===== -->
+        <div class="admin-panel" id="panel-enrollments">
+            <div class="admin-table-wrapper fade-in">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Course</th>
+                            <th>Enrolled Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminEnrollmentsBody">
+                        <!-- Rendered by admin.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer injected by JS -->
+    <footer class="site-footer" id="site-footer"></footer>
+
+    <!-- Scripts -->
+    <script src="js/data.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
